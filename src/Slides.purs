@@ -33,11 +33,12 @@ import Data.List.Zipper as Z
 import Signal (Signal)
 import Slides.Internal.Input as I
 import Control.Comonad (extract)
-import Control.Monad.Eff (Eff)
-import DOM (DOM)
+import Effect (Effect)
 import Data.Array ((:), uncons, singleton)
 import Data.Foldable (foldMap, fold, foldr)
-import Data.Generic (class Generic, gShow, gEq)
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Show (genericShow)
+import Data.Generic.Rep.Eq (genericEq)
 import Data.List (List(..), length)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Signal (foldp, runSignal) as S
@@ -53,7 +54,7 @@ import Text.Smolder.Renderer.String (render) as H
 
 
 -- | run a component for a presentation
-runSlides :: forall e. Slides -> Eff ( dom :: DOM | e ) Unit
+runSlides :: Slides -> Effect Unit
 runSlides slides = do
   inn <- I.input
   runSlidesWithMoves (inputToMove <$> inn) slides
@@ -61,7 +62,7 @@ runSlides slides = do
 -- | run a component for a presentation with a custom Move
 -- | Signal to determine when the slides should move and to which
 -- | Slide.
-runSlidesWithMoves :: forall e. Signal Move -> Slides -> Eff ( dom :: DOM | e ) Unit
+runSlidesWithMoves :: Signal Move -> Slides -> Effect Unit
 runSlidesWithMoves move (Slides slides) = do
   let ui = S.foldp moveSlides slides move
   S.runSignal (setHtml <<< H.render <<< render <$> ui)
@@ -76,7 +77,7 @@ render slides =
       H.text $ show (position slides + 1) <> " / " <> show (zipLength slides)
     renderSlides (extract slides)
 
-foreign import setHtml :: forall e. String -> Eff ( dom :: DOM | e ) Unit
+foreign import setHtml :: String -> Effect Unit
 
 -- | Which way should the slides move:
 -- | - `Back`: Go back one slide. If at the beginning will do nothing
@@ -94,13 +95,13 @@ data Move
   | NextOrStart
   | None
 
-derive instance genericMove :: Generic Move
+derive instance genericMove :: Generic Move _
 
 instance eqMove :: Eq Move where
-  eq = gEq
+  eq = genericEq
 
 instance showMove :: Show Move where
-  show = gShow
+  show = genericShow
 
 inputToMove :: I.Input -> Move
 inputToMove i
@@ -169,11 +170,11 @@ data Element
   | Class String Element
   | Id    String Element
 
-derive instance genericElement :: Generic Element
+derive instance genericElement :: Generic Element _
 
 -- | A Show instance for testing
 instance showElement :: Show Element where
-  show = gShow
+  show x = genericShow x
 
 instance semigroupElement :: Semigroup Element where
   append e1 e2 = Group [e1, e2]

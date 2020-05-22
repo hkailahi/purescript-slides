@@ -1,15 +1,14 @@
 module Slides.Internal.Input where
 
 import Prelude
-import Control.Monad.Eff (Eff)
-import DOM (DOM)
+import Effect (Effect)
 import Data.Int (toNumber)
 import Signal (map2, merge, sampleOn)
 import Signal (Signal, foldp) as S
 import Signal.DOM (Touch, DimensionPair, touch, windowDimensions)
 import Signal.DOM (keyPressed) as S
 
-input :: forall e. Eff (dom :: DOM | e) (S.Signal Input)
+input :: Effect (S.Signal Input)
 input = do
   arrows <- S.foldp updateInput initInput <$> arrowsSignal
   taps   <- S.foldp simpleUpdateInput initInput <$> tapsSignal
@@ -102,7 +101,7 @@ btnStateUpdate false _    = Idle
 btnStateUpdate true  Idle = Click
 btnStateUpdate true  _    = Hold
 
-arrowsSignal :: forall e. Eff (dom :: DOM | e) (S.Signal (Arrows Boolean))
+arrowsSignal :: Effect (S.Signal (Arrows Boolean))
 arrowsSignal = do
   rightArrow <- S.keyPressed rightKeyCode
   leftArrow  <- S.keyPressed leftKeyCode
@@ -126,7 +125,7 @@ rightKeyCode = 39
 downKeyCode :: Int
 downKeyCode = 40
 
-tapsSignal :: forall e. Eff (dom :: DOM | e) (S.Signal (Arrows Boolean))
+tapsSignal :: Effect (S.Signal (Arrows Boolean))
 tapsSignal = do
   sig <- sampleOn <$> touch <*> (map2 { t: _, wd: _ } <$> touch <*> windowDimensions)
   pure $ map touchToArrows sig
